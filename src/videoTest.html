@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QCloud VIDEO UGC UPLOAD SDK</title>
+  <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+  <style type="text/css">
+    .text-danger {
+      color: red;
+    }
+
+    .control-label {
+      text-align: left !important;
+    }
+
+    #resultBox {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #888;
+      padding: 5px;
+      overflow: auto;
+      margin-bottom: 20px;
+    }
+
+    .uploaderMsgBox {
+      width: 100%;
+      border-bottom: 1px solid #888;
+    }
+
+    .cancel-upload {
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <div class="container">
+      <h1>UGC-Uploader</h1>
+    </div>
+  </div>
+  <div class="container" id="main-area">
+    <div class="row" style="padding:10px;">
+      <p>
+        示例1点击“直接上传视频”按钮即可上传视频。<br>。
+      </p>
+    </div>
+    <form ref="vExample">
+      <input type="file" style="display:none;" ref="vExampleFile" @change="vExampleUpload" />
+    </form>
+    <div class="row" style="padding:10px;">
+      <h4>示例1：直接上传视频</h4>
+      <a href="javascript:void(0);" class="btn btn-default" @click="vExampleAdd">直接上传视频</a>
+    </div>
+      <!-- 上传信息组件	 -->
+      <div class="uploaderMsgBox" v-for="uploaderInfo in uploaderInfos">
+        <div v-if="uploaderInfo.videoInfo">
+          视频名称：{{uploaderInfo.videoInfo.name + '.' + uploaderInfo.videoInfo.type}}；
+          上传进度：{{Math.floor(uploaderInfo.progress * 100) + '%'}}；
+          fileId：{{uploaderInfo.fileId}}；
+          上传结果：{{uploaderInfo.isVideoUploadCancel ? '已取消' : uploaderInfo.isVideoUploadSuccess ? '上传成功' : '上传中'}}；
+          <br>
+          地址：{{uploaderInfo.videoUrl}}；
+          <a href="javascript:void(0);" class="cancel-upload" v-if="!uploaderInfo.isVideoUploadSuccess && !uploaderInfo.isVideoUploadCancel" @click="uploaderInfo.cancel()">取消上传</a><br>
+        </div>
+        <div v-if="uploaderInfo.coverInfo">
+          封面名称：{{uploaderInfo.coverInfo.name}}；
+          上传进度：{{Math.floor(uploaderInfo.coverProgress * 100) + '%'}}；
+          上传结果：{{uploaderInfo.isCoverUploadSuccess ? '上传成功' : '上传中'}}；
+          <br>
+          地址：{{uploaderInfo.coverUrl}}；
+          <br>
+        </div>
+      </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/vue/2.5.21/vue.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.js"></script>
+  <script src="https://cdn-go.cn/cdn/vod-js-sdk-v6/latest/vod-js-sdk-v6.js"></script>
+
+  <script type="text/javascript">
+
+    ;(function () {
+
+      /**
+       * 计算签名。调用签名接口获取
+      **/
+      function getSignature() {
+        return axios.get("http://localhost:8301/admin/vod/sign").then(response =>{
+          return response.data.data
+        })
+      };
+      var app = new Vue({
+        el: '#main-area',
+        data: {
+          uploaderInfos: [],
+
+          vcExampleVideoName: '',
+          vcExampleCoverName: '',
+
+          cExampleFileId: '',
+        },
+        created: function () {
+          this.tcVod = new TcVod.default({
+            getSignature: getSignature
+          })
+        },
+        methods: {
+          /**
+           * vExample示例。添加视频
+          **/
+          vExampleAdd: function () {
+            this.$refs.vExampleFile.click()
+          },
+          /**
+           * vExample示例。上传视频过程。
+          **/
+          vExampleUpload: function () {
+            var self = this;
+            var mediaFile = this.$refs.vExampleFile.files[0]
+
+            var uploader = this.tcVod.upload({
+              mediaFile: mediaFile,
+            })
+            uploader.on('media_progress', function (info) {
+              uploaderInfo.progress = info.percent;
+            })
+            uploader.on('media_upload', function (info) {
+              uploaderInfo.isVideoUploadSuccess = true;
+            })
+
+            console.log(uploader, 'uploader')
+
+            var uploaderInfo = {
+              videoInfo: uploader.videoInfo,
+              isVideoUploadSuccess: false,
+              isVideoUploadCancel: false,
+              progress: 0,
+              fileId: '',
+              videoUrl: '',
+              cancel: function() {
+                uploaderInfo.isVideoUploadCancel = true;
+                uploader.cancel()
+              },
+            }
+
+            this.uploaderInfos.push(uploaderInfo)
+            uploader.done().then(function(doneResult) {
+              console.log('doneResult', doneResult)
+              uploaderInfo.fileId = doneResult.fileId;
+              return doneResult.video.url;
+            }).then(function (videoUrl) {
+              uploaderInfo.videoUrl = videoUrl
+              self.$refs.vExample.reset();
+            })
+          },
+          // cExample 上传过程
+          cExampleUpload: function() {
+            var self = this;
+            var coverFile = this.$refs.cExampleCover.files[0];
+
+            var uploader = this.tcVod.upload({
+              fileId: this.cExampleFileId,
+              coverFile: coverFile,
+            })
+            uploader.on('cover_progress', function(info) {
+              uploaderInfo.coverProgress = info.percent;
+            })
+            uploader.on('cover_upload', function(info) {
+              uploaderInfo.isCoverUploadSuccess = true;
+            })
+            console.log(uploader, 'uploader')
+
+            var uploaderInfo = {
+              coverInfo: uploader.coverInfo,
+              isCoverUploadSuccess: false,
+              coverProgress: 0,
+              coverUrl: '',
+              cancel: function () {
+                uploader.cancel()
+              },
+            }
+
+            this.uploaderInfos.push(uploaderInfo)
+
+            uploader.done().then(function (doneResult) {
+              console.log('doneResult', doneResult)
+              uploaderInfo.coverUrl = doneResult.cover.url;
+              self.$refs.cExample.reset();
+            })
+          },
+        },
+      })
+    })();
+
+  </script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-26476625-7"></script>
+  <script>
+    // add by alsotang@gmail.com
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-26476625-7');
+  </script>
+</body>
+</html>
