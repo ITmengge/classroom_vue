@@ -47,6 +47,7 @@
           :on-remove="handleOnRemove"
           :on-change="handleChange" 
           :action="BASE_API+'/admin/vod/upload'">
+              <!-- action="#"> -->
               <el-button slot="trigger" size="small" type="primary">选择视频</el-button>
               <el-button :disabled="uploadBtnDisabled" style="margin-left: 20px;" size="small" type="success" @click="submitUpload()">点击上传</el-button>
               <!-- <el-progress class="progress" :text-inside="true" :stroke-width="18" :percentage="progress" status="exception"></el-progress> -->
@@ -182,6 +183,8 @@ export default {
           // 保存地址
           this.fileId = doneResult.fileId
           this.videoURL = doneResult.video.url
+          // console.log('视频ID是：' + this.fileId)
+          this.video.videoSourceId = doneResult.fileId
           // // 将视频的第一帧保存为封面  不需要封面的可以直接忽略掉以下代码
           // const canvas = document.createElement('canvas')
           // const img = document.getElementById('video_img')
