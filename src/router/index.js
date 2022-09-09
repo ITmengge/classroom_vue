@@ -218,6 +218,39 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/live',
+    component: Layout,
+    redirect: '/live/liveCourse/list',
+    name: 'Live',
+    meta: {
+      title: '直播管理',
+      icon: 'el-icon-bangzhu'
+    },
+    alwaysShow: true,
+    children: [
+      {
+        path: 'liveCourse/list',
+        name: 'liveCourseList',
+        component: () => import('@/views/live/liveCourse/list'),
+        meta: { title: '直播列表' }
+      },
+      {
+        path: 'liveCourse/config/:id',
+        name: 'liveCourseConfig',
+        component: () => import('@/views/live/liveCourse/config'),
+        meta: { title: '直播配置' },
+        hidden: true
+      },
+      {
+        path: 'liveVisitor/list/:id',
+        name: 'liveVisitor',
+        component: () => import('@/views/live/liveVisitor/list'),
+        meta: { title: '观看记录' },
+        hidden: true
+      }
+    ]
+  },
+  {
     path: '/example',
     component: Layout,
     redirect: '/example/table',
